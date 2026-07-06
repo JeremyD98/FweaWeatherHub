@@ -546,8 +546,10 @@
     bottom: calc(env(safe-area-inset-bottom, 0px) + 88px);
     right: 20px;
     width: 300px;
-    background: var(--panel);
-    border: 1px solid var(--border-strong);
+    background: rgba(255, 255, 255, 0.7);
+    -webkit-backdrop-filter: blur(14px) saturate(180%);
+    backdrop-filter: blur(14px) saturate(180%);
+    border: 1px solid rgba(17, 17, 17, 0.14);
     border-radius: 12px;
     padding: 18px 18px 16px;
     box-shadow: 0 12px 32px rgba(17,17,17,0.14);
@@ -562,9 +564,11 @@
     right: 27px;
     width: 14px;
     height: 14px;
-    background: var(--panel);
-    border-right: 1px solid var(--border-strong);
-    border-bottom: 1px solid var(--border-strong);
+    background: rgba(255, 255, 255, 0.7);
+    -webkit-backdrop-filter: blur(14px) saturate(180%);
+    backdrop-filter: blur(14px) saturate(180%);
+    border-right: 1px solid rgba(17, 17, 17, 0.14);
+    border-bottom: 1px solid rgba(17, 17, 17, 0.14);
     transform: rotate(45deg);
   }
   @keyframes bubbleIn {
@@ -987,6 +991,7 @@ async function refreshCurrentLocation() {
   await loadForLocation(currentLoc.lat, currentLoc.lon, currentLoc.label);
 }
 
+
 function toggleChatMenu() {
   const menu = document.getElementById('chatMenu');
   menu.hidden = !menu.hidden;
@@ -1189,9 +1194,6 @@ function buildDayBlurb(w) {
     const parts = windows.slice(0, 2).map(w => `${formatHour(w.start)}–${formatHour(w.end)}`);
     timing = `Rain windows: ${parts.join(', ')}${windows.length > 2 ? '…' : ''}.`;
   }
-  if (isRainingALot(w) && timing) {
-    timing = timing.replace(/\.$/, '') + ` — ${LAWT_PHRASE}`;
-  }
   return { main: `${cond}. ${rangeText}`, timing };
 }
 
@@ -1292,10 +1294,9 @@ function buildRecommendation(w) {
   const isRainCode = code >= 51 && code <= 82 && code !== 71 && code !== 73 && code !== 75 && code !== 77;
   if (isRainCode || rainProb >= 60 || rainSum >= 2) {
     if (rainSum >= 10 || code === 82 || (code >= 95 && code <= 99)) {
-      items.push(['☔', `Heavy rain expected — ${LAWT_PHRASE} Waterproof jacket + umbrella.`]);
+      items.push(['☔', 'Heavy rain expected — waterproof jacket + umbrella']);
     } else if (rainProb >= 40 || isRainCode) {
-      const suffix = isRainingALot(w) ? ` — ${LAWT_PHRASE}` : '';
-      items.push(['☂️', `Umbrella — ${Math.round(rainProb)}% rain chance today${suffix}`]);
+      items.push(['☂️', `Umbrella — ${Math.round(rainProb)}% rain chance today`]);
     }
   }
 
