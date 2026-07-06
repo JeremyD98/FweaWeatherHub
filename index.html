@@ -153,12 +153,60 @@
   }
 
   .location-label {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 10px;
     font-family: var(--serif);
     font-style: italic;
     font-size: 14px;
     color: var(--muted);
     margin-bottom: 14px;
     letter-spacing: 0.02em;
+  }
+  .staleness {
+    font-family: var(--sans);
+    font-style: normal;
+    font-size: 10.5px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.75;
+  }
+  .staleness::before { content: '·'; margin-right: 8px; opacity: 0.55; }
+  .staleness.stale { color: #8b1a1a; opacity: 1; }
+
+  .ptr-indicator {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: translateY(-60px);
+    z-index: 200;
+    color: var(--muted);
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 13px;
+    pointer-events: none;
+    letter-spacing: 0.02em;
+  }
+  .ptr-indicator.animate { transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1); }
+  .ptr-indicator.active { transform: translateY(0); }
+  .ptr-arrow {
+    display: inline-block;
+    margin-right: 8px;
+    transition: transform 0.15s ease;
+  }
+  .ptr-indicator.ready .ptr-arrow { transform: rotate(180deg); }
+  .ptr-indicator.spinning .ptr-arrow {
+    animation: ptrSpin 0.9s linear infinite;
+  }
+  @keyframes ptrSpin {
+    to { transform: rotate(360deg); }
   }
 
   .card {
@@ -691,6 +739,11 @@
   </div>
 </div>
 
+<div id="ptrIndicator" class="ptr-indicator">
+  <span class="ptr-arrow">↓</span>
+  <span id="ptrLabel">Pull to refresh</span>
+</div>
+
 <button id="chatToggle" class="chat-toggle" aria-label="Ask a friend" title="Ask a friend">
   <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
     <path d="M4.5 15 Q2.5 12 4 10 Q6 9 8 12 Z" fill="#9a7f5a"/>
@@ -757,8 +810,12 @@
 
 <script>
 const STORAGE_KEY = 'whattowear:lastLocation';
+const LAWT_PHRASE = 'it’s like… a lawt…';
 let requestGen = 0;
 let currentWeather = null;
+let currentLoc = null;
+let lastFetchedAt = null;
+let stalenessTimer = null;
 
 const CHARACTERS = {
   rocky: {
@@ -890,6 +947,44 @@ function showAssistant(charKey) {
 
 function hideAssistant() {
   document.getElementById('assistantBubble').hidden = true;
+}
+
+function isRainingALot(w) {
+  if (!w) return false;
+  const rainSum = w.daily.precipitation_sum?.[0] ?? 0;
+  const code = w.current.weather_code;
+  const hourly = w.hourly?.precipitation || [];
+  const maxHourly = hourly.length ? Math.max(...hourly.slice(0, 24)) : 0;
+  const heavyCodes = [65, 67, 82, 95, 96, 99];
+  return rainSum >= 5 || maxHourly >= 1.5 || heavyCodes.includes(code);
+}
+
+function formatAge(ms) {
+  const s = Math.floor(ms / 1000);
+  if (s < 45) return 'just now';
+  const m = Math.floor(s / 60);
+  if (m < 60) return `updated ${m} min ago`;
+  const h = Math.floor(m / 60);
+  return `updated ${h}h ago`;
+}
+
+function updateStaleness() {
+  const el = document.getElementById('staleness');
+  if (!el || !lastFetchedAt) return;
+  const age = Date.now() - lastFetchedAt;
+  el.textContent = formatAge(age);
+  el.classList.toggle('stale', age > 30 * 60 * 1000);
+}
+
+function startStalenessTicker() {
+  if (stalenessTimer) clearInterval(stalenessTimer);
+  updateStaleness();
+  stalenessTimer = setInterval(updateStaleness, 30000);
+}
+
+async function refreshCurrentLocation() {
+  if (!currentLoc) return;
+  await loadForLocation(currentLoc.lat, currentLoc.lon, currentLoc.label);
 }
 
 function toggleChatMenu() {
@@ -1094,6 +1189,9 @@ function buildDayBlurb(w) {
     const parts = windows.slice(0, 2).map(w => `${formatHour(w.start)}–${formatHour(w.end)}`);
     timing = `Rain windows: ${parts.join(', ')}${windows.length > 2 ? '…' : ''}.`;
   }
+  if (isRainingALot(w) && timing) {
+    timing = timing.replace(/\.$/, '') + ` — ${LAWT_PHRASE}`;
+  }
   return { main: `${cond}. ${rangeText}`, timing };
 }
 
@@ -1117,9 +1215,10 @@ function buildRainTimeline(w) {
     return `<div class="timeline-bar${isPast ? ' past' : ''}" style="height:${heightPct}%" title="${hour}:00 — ${p}%"></div>`;
   }).join('');
   const nowLeftPct = ((nowHour + 0.5) / 24) * 100;
+  const timelineLabel = isRainingALot(w) ? `Rain probability — ${LAWT_PHRASE}` : 'Rain probability, hour by hour';
   return `
     <div class="rain-timeline">
-      <div class="timeline-label">Rain probability, hour by hour</div>
+      <div class="timeline-label">${timelineLabel}</div>
       <div class="timeline-bars">
         ${bars}
         <div class="timeline-now" style="left:${nowLeftPct}%"></div>
@@ -1193,9 +1292,10 @@ function buildRecommendation(w) {
   const isRainCode = code >= 51 && code <= 82 && code !== 71 && code !== 73 && code !== 75 && code !== 77;
   if (isRainCode || rainProb >= 60 || rainSum >= 2) {
     if (rainSum >= 10 || code === 82 || (code >= 95 && code <= 99)) {
-      items.push(['☔', 'Heavy rain expected — waterproof jacket + umbrella']);
+      items.push(['☔', `Heavy rain expected — ${LAWT_PHRASE} Waterproof jacket + umbrella.`]);
     } else if (rainProb >= 40 || isRainCode) {
-      items.push(['☂️', `Umbrella — ${Math.round(rainProb)}% rain chance today`]);
+      const suffix = isRainingALot(w) ? ` — ${LAWT_PHRASE}` : '';
+      items.push(['☂️', `Umbrella — ${Math.round(rainProb)}% rain chance today${suffix}`]);
     }
   }
 
@@ -1224,7 +1324,7 @@ function renderWeather(w, locationName) {
   const blurb = buildDayBlurb(w);
   const rainProb = Math.round(w.daily.precipitation_probability_max?.[0] ?? 0);
 
-  el.locationLabel.textContent = locationName;
+  el.locationLabel.innerHTML = `<span>${locationName}</span><span class="staleness" id="staleness"></span>`;
 
   el.content.innerHTML = `
     <div class="card">
@@ -1283,10 +1383,13 @@ async function loadForLocation(lat, lon, label) {
     ]);
     const name = label || (place ? `${place.name}${place.admin1 ? ', ' + place.admin1 : ''}${place.country ? ', ' + place.country : ''}` : `${lat.toFixed(2)}, ${lon.toFixed(2)}`);
     currentWeather = weather;
+    currentLoc = { lat, lon, label: name };
+    lastFetchedAt = Date.now();
     renderWeather(weather, name);
     renderPresets(name);
     showMap(lat, lon, name);
     document.getElementById('chatToggle').classList.add('visible');
+    startStalenessTicker();
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ lat, lon, label: name }));
   } catch (err) {
     console.error(err);
@@ -1389,6 +1492,78 @@ el.cityInput.addEventListener('keydown', e => {
   if (e.key === 'Enter') handleSearch(el.cityInput.value);
 });
 el.geoBtn.addEventListener('click', useGeolocation);
+
+(function setupPullToRefresh() {
+  const indicator = document.getElementById('ptrIndicator');
+  const label = document.getElementById('ptrLabel');
+  const THRESHOLD = 70;
+  const MAX_PULL = 130;
+  let startY = null;
+  let currentPull = 0;
+  let pulling = false;
+  let refreshing = false;
+
+  function setTranslate(y) {
+    indicator.style.transform = `translateY(${y - 60}px)`;
+  }
+  function reset(animate = true) {
+    indicator.classList.toggle('animate', animate);
+    indicator.classList.remove('active', 'ready', 'spinning');
+    indicator.style.transform = '';
+    label.textContent = 'Pull to refresh';
+    currentPull = 0;
+    pulling = false;
+  }
+
+  document.addEventListener('touchstart', e => {
+    if (refreshing) return;
+    if (window.scrollY <= 0 && e.touches.length === 1) {
+      startY = e.touches[0].clientY;
+      indicator.classList.remove('animate');
+    } else {
+      startY = null;
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchmove', e => {
+    if (startY === null || refreshing) return;
+    const y = e.touches[0].clientY;
+    const delta = y - startY;
+    if (delta > 0 && window.scrollY <= 0) {
+      pulling = true;
+      currentPull = Math.min(delta * 0.55, MAX_PULL);
+      setTranslate(currentPull);
+      indicator.classList.add('active');
+      const ready = currentPull >= THRESHOLD;
+      indicator.classList.toggle('ready', ready);
+      label.textContent = ready ? 'Release to refresh' : 'Pull to refresh';
+      if (e.cancelable) e.preventDefault();
+    }
+  }, { passive: false });
+
+  document.addEventListener('touchend', async () => {
+    if (!pulling || refreshing) { startY = null; pulling = false; return; }
+    startY = null;
+    if (currentPull >= THRESHOLD && currentLoc) {
+      refreshing = true;
+      indicator.classList.add('animate', 'spinning');
+      indicator.classList.remove('ready');
+      indicator.classList.add('active');
+      indicator.style.transform = 'translateY(0)';
+      label.textContent = 'Refreshing…';
+      try {
+        await refreshCurrentLocation();
+      } catch (e) {
+        console.warn(e);
+      }
+      refreshing = false;
+      setTimeout(() => reset(true), 250);
+    } else {
+      indicator.classList.add('animate');
+      reset(true);
+    }
+  });
+})();
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
