@@ -7,6 +7,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <meta name="apple-mobile-web-app-title" content="Fwea's Hub" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" type="image/svg+xml" href="icon.svg" />
+<link rel="apple-touch-icon" href="icon.svg" />
 <title>Fwea's weather hub</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -492,7 +495,7 @@
 
   .assistant-bubble {
     position: fixed;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 88px);
     right: 20px;
     width: 300px;
     background: var(--panel);
@@ -508,7 +511,7 @@
     content: '';
     position: absolute;
     bottom: -8px;
-    right: 28px;
+    right: 27px;
     width: 14px;
     height: 14px;
     background: var(--panel);
@@ -575,8 +578,9 @@
       right: 14px;
       left: 14px;
       width: auto;
+      bottom: calc(env(safe-area-inset-bottom, 0px) + 84px);
     }
-    .assistant-bubble::after { right: 32px; }
+    .assistant-bubble::after { right: 27px; }
     .chat-toggle { right: 14px; bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); }
     .chat-menu {
       right: 14px;
@@ -1385,6 +1389,12 @@ el.cityInput.addEventListener('keydown', e => {
   if (e.key === 'Enter') handleSearch(el.cityInput.value);
 });
 el.geoBtn.addEventListener('click', useGeolocation);
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW registration failed:', err));
+  });
+}
 
 // Initial load: last saved location > geolocation > prompt
 (function init() {
