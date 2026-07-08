@@ -1,0 +1,19 @@
+{
+  "name": "Fwea's weather hub",
+  "short_name": "Fwea's Hub",
+  "description": "A quick read before you head out the door.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f2ee",
+  "theme_color": "#f4f2ee",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    }
+  ]
+}
