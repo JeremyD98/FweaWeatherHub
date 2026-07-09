@@ -468,8 +468,17 @@
   .stagger-2 { animation-delay: 120ms; }
   .stagger-3 { animation-delay: 260ms; }
   .stagger-4 { animation-delay: 400ms; }
+
+  @keyframes pulseRing {
+    0%   { box-shadow: 0 0 0 0 rgba(17, 17, 17, 0.45); }
+    70%  { box-shadow: 0 0 0 12px rgba(17, 17, 17, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(17, 17, 17, 0); }
+  }
+  .pulse-hint { animation: pulseRing 1.6s ease-out 3; }
+  .chat-toggle.pulse-hint { animation: pulseRing 1.6s ease-out 3; }
+
   @media (prefers-reduced-motion: reduce) {
-    .stagger { animation: none; }
+    .stagger, .pulse-hint, .chat-toggle.pulse-hint { animation: none; }
   }
 
   .chat-toggle {
@@ -981,54 +990,295 @@ function getCharacterMessage(charKey, w) {
              : t < 30 ? 'warm'
              : 'hot';
 
-  const lines = {
-    rocky: {
-      freezing: 'Sad. Air-temperature dangerous-low. Thick fabric-cover essential. Question, human have heat-reserve?',
-      cold:     'Question, human warm enough? Air-cold today. Recommend fabric-cover-body important.',
-      chilly:   'Air cool. Extra fabric-layer recommend. Human comfort important.',
-      mild:     'Air-temperature adequate. Human bio-form should function well today.',
-      nice:     'Amaze! Air-temperature ideal for human bio-form. Enjoy, question mark.',
-      warm:     'Air-temperature elevated. Question, human hydrated? Recommend cool-liquid.',
-      hot:      'Sad. Air very hot. Recommend cool-liquid, shade-seeking. Amaze how humans survive.',
-    },
-    walle: {
-      freezing: 'B-b-brrr… Wall-E cold. C-c-coat! EE-VAH warmer.',
-      cold:     'Wall-E cold. Jacket. Yesss… jacket.',
-      chilly:   'Wall-E chilly. Sweater? Sweater niiice.',
-      mild:     'Wall-E happy. Day is… okay!',
-      nice:     'Waaaall-Eeeee! Happy day! EE-VAAAH!',
-      warm:     'Wall-E warm. Water?',
-      hot:      'WAAAALL-E!! Hot! Hot! WAAATER!!',
-    },
-    remy: {
-      freezing: "Non, non, non — this cold is a punishment. Layer everything, and dream of a slow-simmered soup.",
-      cold:     "Crisp air, the kind that calls for a stew on the stove all afternoon. Wear something warm — not the light jacket.",
-      chilly:   "A little bite in the air. A jacket, and a warm drink. C'est parfait.",
-      mild:     "The weather of a good croissant — comfortable, buttery, kind. A light layer will do.",
-      nice:     "Ah — perfect. This is Paris in spring. Wear something you like and enjoy it slowly.",
-      warm:     "Warm today. A day for cold rosé and something crisp. Dress light, drink water.",
-      hot:      "This heat! The kitchen would be unbearable. Dress light, cold food only, no arguments.",
-    },
-    orange: {
-      freezing: "HEY! HEY! It's SO cold you might snap in half. Hahaha, SNAP! Get it? Anyway, wear a coat, dude.",
-      cold:     "Bruh it's cold. You gonna freeze. Wear the puffer. HEY, is the puffer stuffed with actual PUFF?? HAHAHA.",
-      chilly:   "Chilly out! Layer up like an onion. Wait — I'm not an onion. I'm an ORANGE. HAHAHA!",
-      mild:     "Nice day, buddy! Not too hot, not too cold — JUST RIGHT, like porridge! HAHAHA!",
-      nice:     "PERFECT weather! Go outside! Live your best life! Also — please don't juice me.",
-      warm:     "It's warm out! You know what else is warm? MY HOT TAKES! HAHAHA!",
-      hot:      "IT'S HOOOOT! I'm literally sweating! Well, oranges don't sweat, but you get it. HYDRATE!",
-    },
-  };
+  const lines = CHARACTER_LINES[charKey][band];
+  let msg = pickVariant(`fwea:lastLine:${charKey}:${band}`, lines);
 
-  let msg = lines[charKey][band];
   if (isRaining || rainProb >= 70) {
-    if (charKey === 'rocky') msg += ' Water-fall detected. Water-repel garment necessary.';
-    else if (charKey === 'walle') msg += ' Umbrella! Umbrella! EE-VAH!';
-    else if (charKey === 'orange') msg += ` Also — HEY! ${Math.round(rainProb)}% chance you get wet! Umbrella time, my dude!`;
-    else if (charKey === 'remy') msg += ' And the rain — magnifique for basil, terrible for the walk. Umbrella, oui?';
+    const rainVariants = RAIN_LINES[charKey] || [];
+    if (rainVariants.length) {
+      let rainMsg = pickVariant(`fwea:lastRain:${charKey}`, rainVariants);
+      rainMsg = rainMsg.replace('{RAIN}', String(Math.round(rainProb)));
+      msg += rainMsg;
+    }
   }
   return msg;
 }
+
+function pickVariant(storageKey, arr) {
+  if (!arr || !arr.length) return '';
+  if (arr.length === 1) return arr[0];
+  const lastIdx = parseInt(localStorage.getItem(storageKey) ?? '-1', 10);
+  let idx = Math.floor(Math.random() * arr.length);
+  if (idx === lastIdx) idx = (idx + 1) % arr.length;
+  localStorage.setItem(storageKey, String(idx));
+  return arr[idx];
+}
+
+const CHARACTER_LINES = {
+  rocky: {
+    freezing: [
+      'Sad. Air-temperature dangerous-low. Thick fabric-cover essential. Question, human have heat-reserve?',
+      'Amaze. Air cold-cold-cold. Extreme fabric-layer count recommend. Do not delay.',
+      'Question, is thermostat broken? No — is planet. Layer many. Layer maximum.',
+      'Sad. Sad. Sad. Cold beyond acceptable range. Fabric-cover-body important-important.',
+      'Question, human bio-form contains anti-freeze compound? No, correct. Layer, then.',
+      'Amaze. Wind removes heat rapidly. Wrap face, wrap hands, wrap everything.',
+    ],
+    cold: [
+      'Question, human warm enough? Air-cold today. Fabric-cover-body important.',
+      'Air-temperature low. Recommend fabric-cover with hood-attachment.',
+      'Amaze how human survive without natural fur-coat. Add layer.',
+      'Question, coat located? Answer: on hook. Retrieve.',
+      'Sad. Cool-air today. Extra fabric-cover advise. Do not skip.',
+      'Question, scarf deployed? Deploy scarf. Recommend hat also.',
+    ],
+    chilly: [
+      'Air cool. Extra fabric-layer recommend. Human comfort important.',
+      'Sad. Not-warm-not-cold. Confusing. Wear middle-layer.',
+      'Question, sweater available? Deploy sweater. Optional cardigan.',
+      'Air is chilly-level. Jacket adequate. Not-heavy-not-light.',
+      'Amaze. Air-temperature exactly awkward-value. Layer-flexible recommend.',
+      'Question, human uncertain about jacket? Answer: yes to jacket.',
+    ],
+    mild: [
+      'Air-temperature adequate. Human bio-form should function well today.',
+      'Amaze. Weather acceptable. Wear anything within reason.',
+      'Question, comfort achieved? Yes? Continue with plan.',
+      'Air-temperature neutral. No fabric-emergency detected.',
+      'Sad. Weather uninteresting. But acceptable. Not-notable.',
+      'Question, cardigan optional? Yes. Bring, do not necessarily wear.',
+    ],
+    nice: [
+      'Amaze! Air-temperature ideal for human bio-form. Enjoy, question mark.',
+      'Question, human happy? Should be. Weather optimal today.',
+      'Sad-inverse. Weather good. Go outside. Do not waste.',
+      'Air-temperature: chef-kiss (approx.). Sun-exposure encouraged.',
+      'Amaze! Rare-good-day detected. Recommend outdoor activity.',
+      'Question, plans indoors? Reconsider. Air quality excellent.',
+    ],
+    warm: [
+      'Air-temperature elevated. Question, human hydrated? Recommend cool-liquid.',
+      'Sad. Getting hot-hot. Water-consumption important today.',
+      'Amaze. Warm today. Reduce fabric-cover-layer count.',
+      'Question, shade located? Retreat to shade when possible.',
+      'Air-warm today. Recommend cool-liquid, breathable-fabric.',
+      'Amaze. Sun-strong today. Sunglasses-tool recommend.',
+    ],
+    hot: [
+      'Sad. Air very hot. Recommend cool-liquid, shade-seeking. Amaze how humans survive.',
+      'Sad-sad. Heat dangerous. Water-intake maximum. Shade priority.',
+      'Question, human melting? Retreat indoors. Air-conditioning-tool ideal.',
+      'Amaze. Air-temperature critical. Cool-strategy urgent.',
+      'Sad. Hot-day. Human bio-form struggle predicted. Hydrate constantly.',
+      'Question, brain functioning? Cool-liquid restores. Consume regularly.',
+    ],
+  },
+  walle: {
+    freezing: [
+      'B-b-brrr… Wall-E cold. C-c-coat! EE-VAH warmer.',
+      'Wall-E… freezing. Blanket. Blanket!',
+      'C-c-cold. C-c-c-c. Warm-jacket. Yes.',
+      'Wall-E shiver. Big coat. Big-big coat.',
+      'B-brrr. Cold. Warm-drink? Warm-drink!',
+      'Wall-E… ice… inside! Blanket! HELP!',
+    ],
+    cold: [
+      'Wall-E cold. Jacket. Yesss… jacket.',
+      'Cold-cold. Wall-E want scarf.',
+      'Layer-up… Wall-E happy layer-up.',
+      'Chilly-cold. Puffy jacket. Puffy!',
+      'Wall-E… hmm. Cold. Coat, yes.',
+      'Wall-E cold-hands! Gloves! GLOVES!',
+    ],
+    chilly: [
+      'Wall-E chilly. Sweater? Sweater niiice.',
+      'Sweater time. Wall-E likes sweater.',
+      'Wall-E chilly. Cozy… cozy.',
+      'Cool-ish. Hoodie? Hoodie!',
+      'Not-warm. Wall-E get soft-blanket.',
+      'Wall-E… crisp! Jacket-light! Nice!',
+    ],
+    mild: [
+      'Wall-E happy. Day is… okay!',
+      'Wall-E… neutral! Fine day!',
+      'Just-right. Wall-E like.',
+      'Wall-E… meh. Nice-ish!',
+      'Wall-E okay day. Okay-okay.',
+      'Wall-E fine. Day fine. All fine.',
+    ],
+    nice: [
+      'Waaaall-Eeeee! Happy day! EE-VAAAH!',
+      'Sunshine! Wall-E happy!',
+      'Wall-E dance-dance!',
+      'Perfect day. Wall-E smile!',
+      'EE-VAH! Weather good!',
+      'Wall-E outside! Wall-E happy-happy!',
+    ],
+    warm: [
+      'Wall-E warm. Water?',
+      'Hot-ish. Wall-E fan!',
+      'Wall-E warm. Shade?',
+      'Wall-E… beep. Warm.',
+      'Warm-warm. Wall-E drink water.',
+      'Wall-E hot-panels! Cool-down!',
+    ],
+    hot: [
+      'WAAAALL-E!! Hot! Hot! WAAATER!!',
+      'Wall-E overheat! Air-conditioning!',
+      'Beep-beep! Too-hot!',
+      'Wall-E… melt. HELP.',
+      'Hot! Hot! Wall-E ice-cream!',
+      'WALL-E CIRCUITS! FIRE! WATER!',
+    ],
+  },
+  remy: {
+    freezing: [
+      "Non, non, non — this cold is a punishment. Layer everything, and dream of a slow-simmered soup.",
+      "A day for cassoulet and a heavy coat. Do not underestimate this cold.",
+      "Freezing. Even the herbs will complain. Dress like you mean it.",
+      "This is soup weather. Not consommé — proper, thick, restorative soup. And a coat.",
+      "A cold that bites. Wool, hat, gloves. No shortcuts today.",
+      "This weather asks for tartiflette and three layers minimum. Provide both.",
+    ],
+    cold: [
+      "Crisp air, the kind that calls for a stew on the stove all afternoon. Wear something warm — not the light jacket.",
+      "Cold. A day for coq au vin, and a proper coat.",
+      "The kind of chill that makes butter behave. Bundle up.",
+      "A day for beef bourguignon in your head and wool on your shoulders.",
+      "Cool enough that a scarf becomes a good idea. Deploy the scarf.",
+      "Cold. Wear the good coat, the one you save for photos. Today is the day.",
+    ],
+    chilly: [
+      "A little bite in the air. A jacket, and a warm drink. C'est parfait.",
+      "The weather of a chestnut roast. A cardigan, perhaps a beret if you're bold.",
+      "Cool. A jacket, and something hot to hold. This is not complicated.",
+      "The air is asking for a jacket. Provide it.",
+      "Autumn-crisp. A light sweater, a hot chocolate. Simple pleasures.",
+      "A cool day. The kind that flatters a good scarf. Wear one.",
+    ],
+    mild: [
+      "The weather of a good croissant — comfortable, buttery, kind. A light layer will do.",
+      "Neither warm nor cool. A day for tasting menus. Wear anything.",
+      "Comfortable. Under-dress slightly — you can adjust.",
+      "This is the weather of a picnic. Light layers, good mood.",
+      "The gentle middle. A cardigan you can shed. Nothing dramatic.",
+      "A polite day. Not showy. Wear what you like — the weather will not object.",
+    ],
+    nice: [
+      "Ah — perfect. This is Paris in spring. Wear something you like and enjoy it slowly.",
+      "Beautiful. A day for outdoor tables and unhurried lunches.",
+      "This is what the weather should always be. Enjoy every minute.",
+      "The weather of long walks and lingering wine. Dress well.",
+      "Ideal. Cotton, linen, comfort. Go and be seen.",
+      "The kind of day photographers pray for. Wear the outfit you were saving.",
+    ],
+    warm: [
+      "Warm today. A day for cold rosé and something crisp. Dress light, drink water.",
+      "The kitchen would be uncomfortable. Wear something breathable, seek shade.",
+      "Warm. Linen weather. And a cold drink, always.",
+      "This warmth calls for a niçoise salad. And short sleeves.",
+      "Warm enough that ice matters. Dress light, hydrate.",
+      "A day for eating outside — early, before the shade moves. Dress cool.",
+    ],
+    hot: [
+      "This heat! The kitchen would be unbearable. Dress light, cold food only, no arguments.",
+      "Sacré bleu. This is not weather — this is punishment. Minimal fabric. Cold everything.",
+      "Too hot for cooking. Cold soup, cold wine, cold shower. Barely dress.",
+      "The heat is aggressive today. Retreat, hydrate, wear as little as decency allows.",
+      "This is gazpacho weather. And shade weather. Do not overdo it.",
+      "The kind of heat that ruins soufflés. And your energy. Stay cool, wear less.",
+    ],
+  },
+  orange: {
+    freezing: [
+      "HEY! HEY! It's SO cold you might snap in half. Hahaha, SNAP! Get it? Anyway, wear a coat, dude.",
+      "BRUH. It's like Antarctica out there. WHERE ARE YOUR MITTENS.",
+      "It's SO cold, penguins are wearing coats. HAHAHA. Wear a coat. Or seven.",
+      "HEY! HEY! Your nose is gonna fall off. Not literally. Probably. WEAR A HAT!",
+      "It's colder than my ex's heart! HAHAHA. Anyway. Puffer jacket. Now.",
+      "IT'S FREEZING! Also — I'm technically a room-temperature fruit and I'm SCARED. LAYER UP!",
+    ],
+    cold: [
+      "Bruh it's cold. You gonna freeze. Wear the puffer. HEY, is the puffer stuffed with actual PUFF?? HAHAHA.",
+      "COLD! You know what else is cold? MY HOT TAKES! Wait — that doesn't work. Layer up!",
+      "HEY! HEY! It's cold enough that a scarf isn't optional. A SCARF IS NOT OPTIONAL.",
+      "Yo it's chilly-chilly. Grab a jacket. Or three. I don't judge.",
+      "It's cold, bro. Time to layer like an onion. WAIT I already made that joke. Whatever. LAYER!",
+      "HEY! It's cold! Wear the coat AND the scarf AND the hat! MAXIMUM COZE!",
+    ],
+    chilly: [
+      "Chilly out! Layer up like an onion. Wait — I'm not an onion. I'm an ORANGE. HAHAHA!",
+      "Hey! It's a little cool. Grab a jacket. Or a giant sweater. I'm not the boss.",
+      "Chilly! Deploy the sweater! DEPLOY!",
+      "HEY! It's crisp out there. Like… like ME! Except I'm juicy. Grab a hoodie!",
+      "It's kinda cold. Kinda cold, kinda not. Middle-cold. Wear a jacket you can take off. Boom.",
+      "HEY! HEY! It's sweater weather! MY FAVORITE WEATHER! Except I don't wear sweaters! WHATEVER!",
+    ],
+    mild: [
+      "Nice day, buddy! Not too hot, not too cold — JUST RIGHT, like porridge! HAHAHA!",
+      "It's… fine? It's fine. Weather that doesn't scream at you. Wear whatever.",
+      "Middle weather! No drama. Kinda boring, honestly. WHATEVER!",
+      "Hey! It's a neutral day. Neutral like Switzerland. HAHAHA! Chill outfit.",
+      "It's a weather. It exists. Wear clothes. Bye!",
+      "HEY! It's the weather-est weather. Middle-est middle. WEAR WHATEVER!",
+    ],
+    nice: [
+      "PERFECT weather! Go outside! Live your best life! Also — please don't juice me.",
+      "IT'S BEAUTIFUL OUT!! Get out there! Touch grass! But like, gently!",
+      "HEY! Perfect day! Ideal! Chef's kiss! Someone go outside for me!",
+      "It's a NINE OUT OF TEN. What's it missing? ME. But whatever.",
+      "GORGEOUS weather! Wear the outfit you've been saving! Go show it off!",
+      "HEY! It's PICNIC WEATHER! Bring me! Actually no. Bring my cousin. Leave me here.",
+    ],
+    warm: [
+      "It's warm out! You know what else is warm? MY HOT TAKES! HAHAHA!",
+      "HEY! HEY! It's warm! Sunscreen! SUN-screen! Get it? Because SUN?",
+      "Warm-warm day. Time to squeeze — wait, DON'T squeeze me! I meant clothes! LESS clothes!",
+      "It's warm. Not hot. Not cold. WARM. Wear less. Drink more. Live.",
+      "HEY! It's the temperature of a fresh mango. HAHAHA I'm citrus but I know mangoes. Dress light.",
+      "Warm! Rolled-up sleeves weather! ROLL 'EM UP!",
+    ],
+    hot: [
+      "IT'S HOOOOT! I'm literally sweating! Well, oranges don't sweat, but you get it. HYDRATE!",
+      "HOT-HOT-HOT! I'm gonna become MARMALADE at this rate! WATER! NOW!",
+      "IT'S SO HOT! Even the shade is sweating! Wear NOTHING! WAIT I MEAN LIGHT CLOTHES!",
+      "BRUH. This heat is UNHINGED. Water bottle. Right now. GO.",
+      "It's hotter than a jalapeño's DREAMS. HAHAHA! Anyway. Shade. Water. Now.",
+      "HEY! HEY! IT'S FURNACE-CORE OUT THERE! Dress like you owe fabric money! MINIMUM!",
+    ],
+  },
+};
+
+const RAIN_LINES = {
+  rocky: [
+    ' Water-fall detected. Water-repel garment necessary.',
+    ' Sad. Water descending from sky. Recommend umbrella-tool.',
+    ' Water-precipitation confirmed. Amaze. Prepare umbrella.',
+    ' Question, umbrella retrieved? Deploy umbrella. Deploy.',
+    ' Amaze. Sky-water today. Waterproof fabric essential.',
+  ],
+  walle: [
+    ' Umbrella! Umbrella! EE-VAH!',
+    ' Wall-E… wet! Umbrella!',
+    ' Rain-rain. Wall-E dry! Umbrella!',
+    ' Water. Big-water. Umbrella-time!',
+    ' Wall-E rusty! No! Umbrella!',
+  ],
+  orange: [
+    ' Also — HEY! {RAIN}% chance you get wet! Umbrella time, my dude!',
+    " Also — it's WET out there! {RAIN}% wet! GRAB the umbrella!",
+    ' PS — rain! {RAIN}% rain! Time to look mysterious under an umbrella!',
+    ' HEY it\'s raining! {RAIN}% chance! GET WET or GRAB UMBRELLA!',
+    ' OH ALSO {RAIN}% RAIN! I would MELT out there! WELL not really! UMBRELLA!',
+  ],
+  remy: [
+    ' And the rain — magnifique for basil, terrible for the walk. Umbrella, oui?',
+    ' Also, the rain. Perfect for the parsley, not for you. Umbrella.',
+    ' The rain is here. Beautiful for the soil, awful for the shoes. Deploy the umbrella.',
+    ' Ah, and it will rain. The umbrella. Bring it.',
+    ' A rainy day — a poet\'s weather. But cover your head. Please.',
+  ],
+};
 
 function showAssistant(charKey) {
   if (!currentWeather) return;
@@ -1083,6 +1333,56 @@ async function refreshCurrentLocation() {
   await loadForLocation(currentLoc.lat, currentLoc.lon, currentLoc.label);
 }
 
+const SHREK_PORTRAIT = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <path d="M14 46 Q6 38 12 30 Q22 26 26 40 Z" fill="#9a7f5a"/>
+  <path d="M86 46 Q94 38 88 30 Q78 26 74 40 Z" fill="#9a7f5a"/>
+  <ellipse cx="20" cy="38" rx="3" ry="4" fill="#6a5540"/>
+  <ellipse cx="80" cy="38" rx="3" ry="4" fill="#6a5540"/>
+  <ellipse cx="50" cy="52" rx="30" ry="32" fill="#7ea63a"/>
+  <ellipse cx="42" cy="30" rx="14" ry="6" fill="#8fb84a" opacity="0.8"/>
+  <ellipse cx="38" cy="46" rx="5" ry="6" fill="#ffffff"/>
+  <ellipse cx="62" cy="46" rx="5" ry="6" fill="#ffffff"/>
+  <circle cx="39" cy="47" r="2.5" fill="#3a2a10"/>
+  <circle cx="63" cy="47" r="2.5" fill="#3a2a10"/>
+  <ellipse cx="50" cy="62" rx="6" ry="4" fill="#5f8228"/>
+  <ellipse cx="47" cy="61" rx="1.2" ry="1" fill="#3f5c18"/>
+  <ellipse cx="53" cy="61" rx="1.2" ry="1" fill="#3f5c18"/>
+  <path d="M40 74 Q50 78 60 74" stroke="#3a2a10" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+</svg>`;
+
+const SHREK_WELCOME_LINES = [
+  "Oi. Tap me for outfit takes from Rocky, WALL·E, Remy, and Orange.",
+  "The friends have takes. Tap me to see them.",
+  "Hi. I keep the friends in here. Tap me any time.",
+];
+
+function pulseHints() {
+  const chatToggle = document.getElementById('chatToggle');
+  const presets = document.querySelectorAll('.preset');
+  const targets = [chatToggle, ...presets].filter(Boolean);
+  targets.forEach(t => {
+    t.classList.remove('pulse-hint');
+    void t.offsetWidth;
+    t.classList.add('pulse-hint');
+    setTimeout(() => t.classList.remove('pulse-hint'), 5200);
+  });
+}
+
+function showShrekWelcome() {
+  const bubble = document.getElementById('assistantBubble');
+  const line = pickVariant('fwea:shrekWelcome', SHREK_WELCOME_LINES);
+  document.getElementById('assistantPortrait').innerHTML = SHREK_PORTRAIT;
+  document.getElementById('assistantName').textContent = 'Shrek';
+  document.getElementById('assistantRole').textContent = 'your host';
+  document.getElementById('assistantSpeech').textContent = line;
+  bubble.hidden = false;
+  setTimeout(() => {
+    if (document.getElementById('assistantName').textContent === 'Shrek') {
+      bubble.hidden = true;
+    }
+  }, 7000);
+}
+
 function playReveal() {
   const els = [
     el.locationLabel,
@@ -1091,7 +1391,7 @@ function playReveal() {
     document.getElementById('mapCard'),
   ].filter(Boolean);
 
-  els.forEach((node, i) => {
+  els.forEach(node => {
     node.classList.remove('stagger', 'stagger-1', 'stagger-2', 'stagger-3', 'stagger-4');
   });
   void document.body.offsetWidth;
@@ -1099,11 +1399,11 @@ function playReveal() {
     node.classList.add('stagger', `stagger-${i + 1}`);
   });
 
-  const menuDelay = 250 + (els.length - 1) * 140 + 400;
+  const afterStagger = 250 + (els.length - 1) * 140 + 400;
   setTimeout(() => {
-    hideAssistant();
-    document.getElementById('chatMenu').hidden = false;
-  }, menuDelay);
+    showShrekWelcome();
+    pulseHints();
+  }, afterStagger);
 }
 
 
