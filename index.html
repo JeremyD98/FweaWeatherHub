@@ -36,21 +36,24 @@
     font-family: var(--sans);
     font-weight: 400;
     color: var(--text);
-    padding: calc(env(safe-area-inset-top, 0px) + 40px) calc(env(safe-area-inset-right, 0px) + 16px) calc(env(safe-area-inset-bottom, 0px) + 64px) calc(env(safe-area-inset-left, 0px) + 16px);
-    display: flex;
-    justify-content: center;
+    padding: 0;
     line-height: 1.5;
     -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: transparent;
+    overflow-x: hidden;
     background-color: var(--bg);
     background-image:
       url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='900' height='900'><filter id='m'><feTurbulence type='fractalNoise' baseFrequency='0.008 0.02' numOctaves='4' seed='4'/><feColorMatrix values='0 0 0 0 0.07  0 0 0 0 0.07  0 0 0 0 0.07  0 0 0 0.55 0'/><feComponentTransfer><feFuncA type='linear' slope='2.4' intercept='-1.4'/></feComponentTransfer></filter><rect width='100%' height='100%' filter='url(%23m)'/></svg>"),
-      radial-gradient(1200px 800px at 20% 10%, #ffffff 0%, #f4f2ee 40%, #e9e6e0 100%);
+      radial-gradient(1200px 800px at 50% 30%, #ffffff 0%, #f4f2ee 45%, #e9e6e0 100%);
     background-blend-mode: multiply, normal;
     background-size: 900px 900px, auto;
     background-attachment: fixed, fixed;
   }
-  .app { width: 100%; max-width: 520px; }
+  .app {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 24px calc(env(safe-area-inset-right, 0px) + 16px) calc(env(safe-area-inset-bottom, 0px) + 100px) calc(env(safe-area-inset-left, 0px) + 16px);
+  }
 
   .header {
     text-align: center;
@@ -754,32 +757,457 @@
     .timeline-axis span:nth-child(2n) { display: none; }
   }
   @media (max-width: 380px) {
-    .now-temp { font-size: 60px; }
     h1 { font-size: 28px; }
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     NATIVE-BLEND OVERRIDES — glass cards, hero, tints, sun arc
+     ═══════════════════════════════════════════════════════════ */
+  :root {
+    --panel: rgba(255, 255, 255, 0.58);
+    --panel-strong: rgba(255, 255, 255, 0.72);
+    --card-radius: 22px;
+    --card-shadow: 0 12px 40px rgba(17, 17, 17, 0.06), 0 1px 3px rgba(17, 17, 17, 0.04);
+    --border-glass: 1px solid rgba(255, 255, 255, 0.75);
+    --panel-inset-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Tint overlay layers (behind everything) */
+  .tint {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 900ms var(--ease);
+    mix-blend-mode: soft-light;
+    pointer-events: none;
+  }
+  .tint.active { opacity: 1; }
+  .tint.clear    { background: radial-gradient(900px 600px at 80% 15%, #ffd580 0%, transparent 55%); }
+  .tint.rainy    { background: radial-gradient(1100px 700px at 20% 20%, #7fa3c4 0%, transparent 60%); }
+  .tint.freezing { background: radial-gradient(1100px 700px at 50% 15%, #b8d4e6 0%, transparent 55%); }
+  .tint.hot      { background: radial-gradient(1000px 600px at 70% 15%, #ffb27f 0%, transparent 55%); }
+
+  .hero-shine {
+    position: fixed; top: -100px; right: -100px; width: 500px; height: 500px;
+    z-index: -1; opacity: 0; transition: opacity 900ms ease; pointer-events: none;
+    background: radial-gradient(circle, rgba(255,220,120,0.18) 0%, transparent 60%);
+    animation: shine 12s ease-in-out infinite;
+  }
+  .hero-shine.active { opacity: 1; }
+  @keyframes shine {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.15); }
+  }
+
+  /* Page header (branding above hero) */
+  .page-header {
+    text-align: center;
+    padding: calc(env(safe-area-inset-top, 0px) + 28px) 20px 0;
+    position: relative;
+    z-index: 1;
+  }
+  .page-header-title {
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    color: var(--text);
+  }
+  .page-header-rule {
+    width: 32px;
+    height: 1px;
+    background: rgba(17, 17, 17, 0.22);
+    margin: 10px auto 0;
+  }
+
+  /* Full-bleed atmospheric hero */
+  .hero {
+    position: relative;
+    width: 100%;
+    min-height: 420px;
+    padding: 32px 24px 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    overflow: hidden;
+  }
+  .hero-inner {
+    max-width: 480px;
+    width: 100%;
+  }
+  .hero-status {
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--muted);
+    font-size: 16px;
+    padding: 60px 0;
+  }
+  .hero-location {
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--muted);
+    font-size: 14px;
+    letter-spacing: 0.02em;
+    margin-bottom: 20px;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .hero-location .staleness {
+    font-family: var(--sans);
+    font-style: normal;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.7;
+  }
+  .hero-location .staleness::before { content: '·'; margin-right: 6px; opacity: 0.6; }
+  .hero-location .staleness.stale { color: #8b1a1a; opacity: 1; }
+  .hero-temp {
+    font-family: var(--serif);
+    font-size: 120px;
+    font-weight: 400;
+    letter-spacing: -0.03em;
+    line-height: 0.9;
+    text-shadow: 0 2px 0 rgba(255,255,255,0.4);
+  }
+  .hero-tag {
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 6px;
+    letter-spacing: 0.03em;
+  }
+  .hero-condition {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 21px;
+    margin-top: 18px;
+    line-height: 1.3;
+  }
+  .hero-blurb {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 15px;
+    color: var(--muted);
+    max-width: 360px;
+    margin: 8px auto 0;
+    line-height: 1.4;
+  }
+  .hero-range {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+    padding: 8px 16px;
+    background: rgba(255,255,255,0.5);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: var(--border-glass);
+    border-radius: 999px;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    box-shadow: var(--panel-inset-shadow);
+  }
+  .hero-range .divider { opacity: 0.35; }
+  .hero-range .num {
+    font-family: var(--serif);
+    text-transform: none;
+    font-size: 13px;
+    letter-spacing: 0;
+    color: var(--text);
+    font-style: italic;
+  }
+
+  /* Controls (search + presets) */
+  .controls {
+    margin-bottom: 16px;
+  }
+
+  /* Glass card override */
+  .card {
+    position: relative;
+    background: var(--panel);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    backdrop-filter: blur(24px) saturate(180%);
+    border: var(--border-glass);
+    border-radius: var(--card-radius);
+    box-shadow: var(--card-shadow), var(--panel-inset-shadow);
+    padding: 22px;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    inset: 1px 1px auto 1px;
+    height: 40%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 100%);
+    border-radius: var(--card-radius) var(--card-radius) 0 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .card > * { position: relative; z-index: 1; }
+  .card.map-card { padding: 0; }
+  #map { border-radius: var(--card-radius); }
+
+  #content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  /* Card label utility (used by new cards) */
+  .card-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    margin-bottom: 14px;
+    font-weight: 500;
+  }
+
+  /* Rain timeline card lives in .card now, drop its own margin/border */
+  .rain-timeline {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+  }
+  .timeline-bars {
+    display: flex;
+    align-items: flex-end;
+    height: 44px;
+    gap: 2px;
+    position: relative;
+  }
+  .timeline-bar {
+    background: linear-gradient(180deg, rgba(17,17,17,0.9), rgba(17,17,17,0.7));
+    border-radius: 3px 3px 1px 1px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.15);
+  }
+  .timeline-bar.past {
+    background: linear-gradient(180deg, rgba(17,17,17,0.15), rgba(17,17,17,0.08));
+  }
+  .timeline-now {
+    box-shadow: 0 0 8px rgba(17,17,17,0.35);
+  }
+
+  /* Character insight card (inline, rotates) */
+  .character-card {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+  }
+  .character-portrait-inline {
+    flex-shrink: 0;
+    width: 68px;
+    height: 68px;
+    filter: drop-shadow(0 6px 12px rgba(17,17,17,0.14));
+  }
+  .character-portrait-inline svg {
+    width: 100%;
+    height: 100%;
+    animation: portraitFloat 3s ease-in-out infinite;
+  }
+  .character-text { flex: 1; min-width: 0; }
+  .character-inline-name {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 14px;
+  }
+  .character-inline-role {
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--muted);
+    font-size: 11px;
+    margin-left: 5px;
+  }
+  .character-inline-line {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 14px;
+    line-height: 1.4;
+    margin-top: 6px;
+  }
+  .character-swap {
+    margin-top: 10px;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+  }
+  .character-swap:hover { color: var(--text); }
+
+  /* What to wear card — reuse existing rec-headline/rec-list */
+
+  /* Right now stats — 2×2 tile grid */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .stat-tile {
+    padding: 18px 16px;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.55);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
+  }
+  .stat-tile-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .stat-tile-value {
+    font-family: var(--serif);
+    font-size: 24px;
+    font-weight: 400;
+  }
+  .stat-tile-caption {
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--muted);
+    font-size: 11px;
+    margin-top: 4px;
+  }
+
+  /* Sun arc card */
+  .sun-arc {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .sun-arc-svg { flex-shrink: 0; }
+  .sun-arc-info { flex: 1; }
+  .sun-arc-times {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 6px;
+  }
+  .sun-time { font-family: var(--serif); font-size: 16px; }
+  .sun-label {
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .daylight {
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  /* Adjust preset chips + location-bar to glass */
+  .location-bar input {
+    background: rgba(255, 255, 255, 0.7);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border-color: rgba(17, 17, 17, 0.08);
+  }
+  .location-bar button {
+    background: rgba(255, 255, 255, 0.7);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border-color: rgba(17, 17, 17, 0.08);
+  }
+  .location-bar button.primary {
+    background: rgba(17, 17, 17, 0.9);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .preset {
+    background: rgba(255, 255, 255, 0.6);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    backdrop-filter: blur(16px) saturate(180%);
+    border-color: rgba(255, 255, 255, 0.7);
+    box-shadow: 0 2px 6px rgba(17,17,17,0.03), var(--panel-inset-shadow);
+    transition: all 200ms var(--spring);
+  }
+  .preset:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(17,17,17,0.08); }
+  .preset:active { transform: scale(0.96); }
+  .preset.active {
+    background: rgba(17, 17, 17, 0.9);
+    border-color: rgba(17, 17, 17, 0.9);
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(17,17,17,0.24);
+  }
+
+  /* Suggestions dropdown glass */
+  .suggestions {
+    background: rgba(255, 255, 255, 0.75);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+    border-color: rgba(17, 17, 17, 0.08);
+    border-radius: 14px;
+  }
+
+  /* Preserve existing rec-list styling under glass */
+  .rec-headline { color: var(--text); }
+
+  @media (max-width: 480px) {
+    .hero { min-height: 380px; padding: 20px 20px 32px; }
+    .page-header { padding-top: calc(env(safe-area-inset-top, 0px) + 20px); }
+    .page-header-title { font-size: 20px; }
+    .hero-temp { font-size: 92px; }
+    .app { padding: 20px 14px 100px; }
+    .card { padding: 18px 18px 16px; }
+    .location-bar input { font-size: 16px; }
   }
 </style>
 </head>
 <body>
+
+<div class="tint clear" id="tintClear"></div>
+<div class="tint rainy" id="tintRainy"></div>
+<div class="tint freezing" id="tintFreezing"></div>
+<div class="tint hot" id="tintHot"></div>
+<div class="hero-shine" id="heroShine"></div>
+
+<header class="page-header">
+  <div class="page-header-title">Fwea's weather hub</div>
+  <div class="page-header-rule"></div>
+</header>
+
+<section class="hero" id="heroSection">
+  <div class="hero-inner" id="heroInner">
+    <div class="hero-status">Getting your weather…</div>
+  </div>
+</section>
+
 <div class="app">
-  <div class="header">
-    <h1>Fwea's weather hub</h1>
-    <div class="rule"></div>
+  <div class="controls">
+    <div class="location-bar">
+      <input id="cityInput" type="text" placeholder="Type a city, or use my location" autocomplete="off" />
+      <button id="geoBtn" title="Use my location" aria-label="Use my location">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.5-7-12a7 7 0 0 1 14 0c0 5.5-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>
+      </button>
+      <button id="searchBtn" class="primary">Go</button>
+    </div>
+    <div id="suggestions" class="suggestions"></div>
+    <div id="presets" class="presets"></div>
   </div>
 
-  <div class="location-bar">
-    <input id="cityInput" type="text" placeholder="Type a city, or use my location" autocomplete="off" />
-    <button id="geoBtn" title="Use my location" aria-label="Use my location">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.5-7-12a7 7 0 0 1 14 0c0 5.5-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>
-    </button>
-    <button id="searchBtn" class="primary">Go</button>
-  </div>
-  <div id="suggestions" class="suggestions"></div>
-  <div id="presets" class="presets"></div>
-  <div id="locationLabel" class="location-label"></div>
-
-  <div id="content">
-    <div class="status">Getting your weather…</div>
-  </div>
+  <div id="content"></div>
 
   <div id="mapCard" class="card map-card" style="display: none;">
     <div id="map"></div>
@@ -1385,7 +1813,7 @@ function showShrekWelcome() {
 
 function playReveal() {
   const els = [
-    el.locationLabel,
+    document.getElementById('heroSection'),
     document.querySelector('#content > .card'),
     document.querySelector('#content > .card + .card'),
     document.getElementById('mapCard'),
@@ -1429,9 +1857,10 @@ const el = {
   suggestions: document.getElementById('suggestions'),
   presets: document.getElementById('presets'),
   content: document.getElementById('content'),
-  locationLabel: document.getElementById('locationLabel'),
+  heroInner: document.getElementById('heroInner'),
   mapCard: document.getElementById('mapCard'),
 };
+const el_locationLabel_proxy = () => document.querySelector('.hero-location');
 
 let mapInstance = null;
 let mapMarker = null;
@@ -1473,7 +1902,8 @@ function renderPresets(activeLabel) {
 }
 
 function setStatus(msg, isError = false) {
-  el.content.innerHTML = `<div class="status ${isError ? 'error' : ''}">${msg}</div>`;
+  el.heroInner.innerHTML = `<div class="hero-status ${isError ? 'error' : ''}" style="${isError ? 'color:#8b1a1a;' : ''}">${msg}</div>`;
+  el.content.innerHTML = '';
 }
 
 async function geocode(query) {
@@ -1734,51 +2164,126 @@ function buildRecommendation(w) {
   return { headline, items };
 }
 
+function pickTintForWeather(w) {
+  const code = w.current.weather_code;
+  const feels = w.current.apparent_temperature;
+  const isDay = w.current.is_day;
+  if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82) || (code >= 95 && code <= 99)) return 'rainy';
+  if ((code >= 71 && code <= 77) || code === 85 || code === 86) return 'freezing';
+  if (feels <= -2) return 'freezing';
+  if (feels >= 30) return 'hot';
+  if ((code === 0 || code === 1) && isDay) return 'clear';
+  return null;
+}
+
+function applyAtmosphere(w) {
+  const tint = pickTintForWeather(w);
+  document.querySelectorAll('.tint').forEach(t => t.classList.remove('active'));
+  if (tint) {
+    const el = document.getElementById('tint' + tint.charAt(0).toUpperCase() + tint.slice(1));
+    if (el) el.classList.add('active');
+  }
+  document.getElementById('heroShine').classList.toggle('active', tint === 'clear');
+}
+
+function formatSunTime(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  let h = d.getHours();
+  const m = d.getMinutes();
+  const ampm = h >= 12 ? 'pm' : 'am';
+  h = h % 12 || 12;
+  return `${h}:${m.toString().padStart(2, '0')}${ampm}`;
+}
+
+function formatDaylight(riseISO, setISO) {
+  if (!riseISO || !setISO) return '';
+  const rise = new Date(riseISO);
+  const set = new Date(setISO);
+  const mins = Math.max(0, Math.round((set - rise) / 60000));
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return `Daylight: ${h}h ${m.toString().padStart(2, '0')}m`;
+}
+
+function sunPositionPct(w) {
+  const rise = w.daily.sunrise?.[0];
+  const set = w.daily.sunset?.[0];
+  const now = w.current.time;
+  if (!rise || !set || !now) return 0.5;
+  const r = new Date(rise).getTime();
+  const s = new Date(set).getTime();
+  const n = new Date(now).getTime();
+  if (n <= r) return 0;
+  if (n >= s) return 1;
+  return (n - r) / (s - r);
+}
+
+const INLINE_CHAR_ORDER = ['rocky', 'walle', 'remy', 'orange'];
+let inlineCharIdx = (() => {
+  const stored = parseInt(localStorage.getItem('fwea:inlineCharIdx') ?? '', 10);
+  return Number.isFinite(stored) ? ((stored + 1) % INLINE_CHAR_ORDER.length) : Math.floor(Math.random() * INLINE_CHAR_ORDER.length);
+})();
+localStorage.setItem('fwea:inlineCharIdx', String(inlineCharIdx));
+
+function renderCharacterCard(w) {
+  const key = INLINE_CHAR_ORDER[inlineCharIdx];
+  const c = CHARACTERS[key];
+  const line = getCharacterMessage(key, w);
+  return `
+    <div class="card character-card" id="characterCard">
+      <div class="character-portrait-inline">${c.portrait}</div>
+      <div class="character-text">
+        <span class="character-inline-name">${c.name}</span>
+        <span class="character-inline-role">${c.role}</span>
+        <div class="character-inline-line">${line}</div>
+        <button class="character-swap" id="characterSwap">Ask someone else →</button>
+      </div>
+    </div>
+  `;
+}
+
 function renderWeather(w, locationName) {
   const now = w.current;
   const rec = buildRecommendation(w);
   const blurb = buildDayBlurb(w);
   const rainProb = Math.round(w.daily.precipitation_probability_max?.[0] ?? 0);
+  const cond = describeCode(now.weather_code);
 
-  el.locationLabel.innerHTML = `<span>${locationName}</span><span class="staleness" id="staleness"></span>`;
+  applyAtmosphere(w);
+
+  // Hero
+  el.heroInner.innerHTML = `
+    <div class="hero-location">
+      <span>${locationName}</span>
+      <span class="staleness" id="staleness"></span>
+    </div>
+    <div class="hero-temp">${Math.round(now.temperature_2m)}°</div>
+    <div class="hero-tag">right now · feels ${Math.round(now.apparent_temperature)}°</div>
+    <div class="hero-condition">${cond.text}</div>
+    <div class="hero-blurb">${blurb.timing || blurb.main}</div>
+    <div class="hero-range">
+      <span>H</span> <span class="num">${Math.round(w.daily.temperature_2m_max?.[0] ?? 0)}°</span>
+      <span class="divider">·</span>
+      <span>L</span> <span class="num">${Math.round(w.daily.temperature_2m_min?.[0] ?? 0)}°</span>
+    </div>
+  `;
+
+  // Sun arc math
+  const sunPct = sunPositionPct(w);
+  const sunAngle = Math.PI * sunPct;
+  const sunX = 60 - Math.cos(sunAngle) * 50;
+  const sunY = 60 - Math.sin(sunAngle) * 50;
 
   el.content.innerHTML = `
     <div class="card">
-      <div class="now">
-        <div class="now-primary">
-          <div class="now-temp-row">
-            <div class="now-temp">${Math.round(now.temperature_2m)}°</div>
-            <div class="now-tag">right now</div>
-          </div>
-          <div class="feels-like">Feels ${Math.round(now.apparent_temperature)}°</div>
-        </div>
-        <div class="now-blurb">
-          ${blurb.main}
-          ${blurb.timing ? `<span class="rain-timing">${blurb.timing}</span>` : ''}
-        </div>
-      </div>
-      <div class="stats">
-        <div class="stat">
-          <div class="stat-label">Chance of Rain</div>
-          <div class="stat-value">${rainProb}%</div>
-        </div>
-        <div class="stat">
-          <div class="stat-label">Wind</div>
-          <div class="stat-value">${Math.round(now.wind_speed_10m)} km/h</div>
-        </div>
-        <div class="stat">
-          <div class="stat-label">Humidity</div>
-          <div class="stat-value">${Math.round(now.relative_humidity_2m)}%</div>
-        </div>
-        <div class="stat">
-          <div class="stat-label">UV</div>
-          <div class="stat-value">${Math.round(w.daily.uv_index_max?.[0] ?? 0)}</div>
-        </div>
-      </div>
       ${buildRainTimeline(w)}
     </div>
 
+    ${renderCharacterCard(w)}
+
     <div class="card">
+      <div class="card-label">What to wear</div>
       <div class="rec-headline">${rec.headline}</div>
       <ul class="rec-list">
         ${rec.items.map(([icon, text]) =>
@@ -1786,7 +2291,68 @@ function renderWeather(w, locationName) {
         ).join('')}
       </ul>
     </div>
+
+    <div class="card">
+      <div class="card-label">Right now</div>
+      <div class="stat-grid">
+        <div class="stat-tile">
+          <div class="stat-tile-label">Chance of Rain</div>
+          <div class="stat-tile-value">${rainProb}%</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-tile-label">Wind</div>
+          <div class="stat-tile-value">${Math.round(now.wind_speed_10m)} km/h</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-tile-label">Humidity</div>
+          <div class="stat-tile-value">${Math.round(now.relative_humidity_2m)}%</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-tile-label">UV Index</div>
+          <div class="stat-tile-value">${Math.round(w.daily.uv_index_max?.[0] ?? 0)}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Sun</div>
+      <div class="sun-arc">
+        <svg class="sun-arc-svg" viewBox="0 0 120 70" width="120" height="70">
+          <path d="M 10 60 A 50 50 0 0 1 110 60" stroke="rgba(17,17,17,0.15)" stroke-width="1.5" fill="none" stroke-dasharray="2 3"/>
+          <circle cx="${sunX.toFixed(2)}" cy="${sunY.toFixed(2)}" r="6" fill="#ffd580" stroke="#c99530" stroke-width="1"/>
+        </svg>
+        <div class="sun-arc-info">
+          <div class="sun-arc-times">
+            <div>
+              <div class="sun-label">Sunrise</div>
+              <div class="sun-time">${formatSunTime(w.daily.sunrise?.[0])}</div>
+            </div>
+            <div style="text-align: right;">
+              <div class="sun-label">Sunset</div>
+              <div class="sun-time">${formatSunTime(w.daily.sunset?.[0])}</div>
+            </div>
+          </div>
+          <div class="daylight">${formatDaylight(w.daily.sunrise?.[0], w.daily.sunset?.[0])}</div>
+        </div>
+      </div>
+    </div>
   `;
+
+  bindCharacterSwap(w);
+}
+
+function bindCharacterSwap(w) {
+  const swap = document.getElementById('characterSwap');
+  if (!swap) return;
+  swap.addEventListener('click', () => {
+    inlineCharIdx = (inlineCharIdx + 1) % INLINE_CHAR_ORDER.length;
+    localStorage.setItem('fwea:inlineCharIdx', String(inlineCharIdx));
+    const card = document.getElementById('characterCard');
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = renderCharacterCard(w);
+    card.replaceWith(wrapper.firstElementChild);
+    bindCharacterSwap(w);
+  });
 }
 
 async function loadForLocation(lat, lon, label) {
