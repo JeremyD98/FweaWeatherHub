@@ -1161,6 +1161,20 @@
     border-radius: 14px;
   }
 
+  /* Chat menu — solid glass so options read clearly */
+  .chat-menu {
+    background: rgba(255, 255, 255, 0.88);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 20px;
+    box-shadow: 0 16px 40px rgba(17,17,17,0.14), inset 0 1px 0 rgba(255,255,255,0.6);
+  }
+  .chat-option-icon {
+    background: rgba(255, 255, 255, 0.7);
+    border-color: rgba(17, 17, 17, 0.08);
+  }
+
   /* Preserve existing rec-list styling under glass */
   .rec-headline { color: var(--text); }
 

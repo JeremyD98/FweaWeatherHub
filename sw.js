@@ -1,4 +1,4 @@
-const CACHE = 'fwea-hub-v11';
+const CACHE = 'fwea-hub-v12';
 const SHELL = ['./', './index.html', './icon.svg', './manifest.json'];
 
 self.addEventListener('install', event => {
